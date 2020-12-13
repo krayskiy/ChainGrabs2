@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">ChainGrabs</string>
+    <string name = "nina_grabs">Nina\'s Grabs</string>
+    <string name = "grab_backhand">Backhand Slaps</string>
+    <string name = "grab_betrayer">Betrayer</string>
+    <string name = "grab_crab">Crab Hold</string>
+    <string name = "seq_seoi">Seoi Gyaku Juji-gatame</string>
+    <string name = "seq_triple">Triple Slaps</string>
+    <string name = "seq_neck">Neck Crusher</string>
+    <string name = "seq_"></string>
+    <string name="choose_new_grab">Choose New Grab</string>
+    <string name="grab_name">Grab Name</string>
+    <string name="textview">TextView</string>
+</resources>

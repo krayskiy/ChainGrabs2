@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/activity_main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/fe"
+    tools:context=".MainActivity"
+    android:orientation="vertical">
+
+    <fragment
+        android:id="@+id/main_inputs_frag"
+        android:name="com.example.chaingrabs2.inputsFragment"
+        android:layout_width="match_parent"
+        android:layout_height="fill_parent"
+        android:layout_weight="40"
+        tools:layout="@layout/inputs_fragment"/>
+
+    <fragment
+        android:id="@+id/main_buttons_frag"
+        android:name="com.example.chaingrabs2.buttonsFragment"
+        android:layout_width="match_parent"
+        android:layout_height="fill_parent"
+        android:layout_weight="60"
+        tools:layout="@layout/buttons_fragment" />
+
+
+</LinearLayout>
