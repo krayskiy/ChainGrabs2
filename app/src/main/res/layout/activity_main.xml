@@ -9,21 +9,20 @@
     tools:context=".MainActivity"
     android:orientation="vertical">
 
-    <fragment
-        android:id="@+id/main_inputs_frag"
-        android:name="com.example.chaingrabs2.inputsFragment"
+    <FrameLayout
+        android:id="@+id/display_container"
         android:layout_width="match_parent"
-        android:layout_height="fill_parent"
-        android:layout_weight="40"
-        tools:layout="@layout/inputs_fragment"/>
+        android:layout_height="match_parent"
+        android:layout_weight="40">
 
-    <fragment
-        android:id="@+id/main_buttons_frag"
-        android:name="com.example.chaingrabs2.buttonsFragment"
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/button_container"
         android:layout_width="match_parent"
-        android:layout_height="fill_parent"
-        android:layout_weight="60"
-        tools:layout="@layout/buttons_fragment" />
+        android:layout_height="match_parent"
+        android:layout_weight="60">
 
+    </FrameLayout>
 
 </LinearLayout>

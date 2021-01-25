@@ -4,8 +4,10 @@ import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -17,6 +19,9 @@ import androidx.fragment.app.Fragment;
 import java.util.ArrayList;
 
 public class inputsFragment extends Fragment {
+    public void ShowPopup(View v, int displayMessage) {
+        ((MainActivity)getActivity()).ShowPopup(v,displayMessage);
+    }
     View view;
     @Override
     public void onAttach(@NonNull Context context) {
@@ -26,17 +31,40 @@ public class inputsFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         view =  inflater.inflate(R.layout.inputs_fragment,container, false);
+        Button chooseGrabButton = view.findViewById(R.id.swapGrab);
+        chooseGrabButton.setOnTouchListener(
+                new Button.OnTouchListener() {
+                    public boolean onTouch(View v, MotionEvent m) {
+                        ShowPopup(v, -1);
+                        return true;
+                    }
+                }
+        );
         return view;
     }
+
+
     //fuck this lol create a linear layout
     public void setHeader(chain chain) {
         LinearLayout startLayout = (LinearLayout)view.findViewById(R.id.startLayout);
         ArrayList<Integer> motion = chain.getInitialMotion();
         TextView chainName = (TextView)view.findViewById(R.id.grabNameText);
         chainName.setText(chain.chainName);
+        ImageView imageView;
         int imageId;
+        if (chain.chainName == "Cobra Clutch") {
+            imageView = new ImageView(getActivity());
+            imageView.setLayoutParams(new ViewGroup.LayoutParams(100, 100));
+            imageView.setImageResource(R.drawable.threefour);
+            startLayout.addView(imageView);
+            imageView = new ImageView(getActivity());
+            imageView.setLayoutParams(new ViewGroup.LayoutParams(100, 100));
+            imageView.setImageResource(R.drawable.onefour);
+            startLayout.addView(imageView);
+            return;
+        }
         for (int i = 0; i <= motion.size(); i++) {
-            ImageView imageView = new ImageView(getActivity());
+            imageView = new ImageView(getActivity());
             if (i == motion.size()) {
                 imageId = chain.getInputDrawable(chain.getInitialInput());
             } else {

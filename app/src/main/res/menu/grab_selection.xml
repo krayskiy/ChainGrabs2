@@ -4,19 +4,45 @@
     android:layout_height="match_parent"
     xmlns:tools="http://schemas.android.com/tools">
     <item
-        android:id="@+id/menu_nina"
-        android:title="@string/nina_grabs">
+    android:id="@+id/menu_nina"
+    android:title="@string/nina_grabs">
+    <menu>
+        <item
+            android:id="@+id/item_backhand"
+            android:title="@string/grab_backhand"></item>
+        <item
+            android:id="@+id/item_betrayer"
+            android:title="@string/grab_betrayer"></item>
+        <item
+            android:id="@+id/item_crab"
+            android:title="@string/grab_crab"></item>
+    </menu>
+
+    </item>
+    <item
+        android:id="@+id/menu_king"
+        android:title="@string/king_grabs">
         <menu>
             <item
-                android:id="@+id/item_backhand"
-                android:title="@string/grab_backhand"></item>
+                android:id="@+id/item_breaker"
+                android:title="@string/grab_breaker"></item>
             <item
-                android:id="@+id/item_betrayer"
-                android:title="@string/grab_betrayer"></item>
+                android:id="@+id/item_heel"
+                android:title="@string/grab_heel"></item>
             <item
-                android:id="@+id/item_crab"
-                android:title="@string/grab_crab"></item>
+                android:id="@+id/item_bomb"
+                android:title="@string/grab_bomb"></item>
+            <item
+                android:id="@+id/item_slam"
+                android:title="@string/grab_slam"></item>
+            <item
+                android:id="@+id/item_cobra"
+                android:title="@string/grab_cobra"></item>
         </menu>
+
+    </item>
+    <item android:id="@+id/item_breaks"
+        android:title="@string/break_practice">
 
     </item>
 

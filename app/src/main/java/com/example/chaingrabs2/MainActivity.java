@@ -2,6 +2,9 @@ package com.example.chaingrabs2;
 
 import android.app.Activity;
 import android.app.Dialog;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
@@ -13,6 +16,8 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.PopupMenu;
 import android.widget.ProgressBar;
@@ -22,13 +27,14 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
+import androidx.fragment.app.FragmentTransaction;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 //maybe, input should be entirely stored in binary
 
 
-public class MainActivity extends FragmentActivity implements buttonsFragment.buttonsListener {
+public class MainActivity extends FragmentActivity implements buttonsFragment.buttonsListener, videoFragment.videoListener {
     public chain backhandSlap() {
         chain backhandSlaps = new chain();
         backhandSlaps.setChainName("Backhand Slaps");
@@ -680,15 +686,26 @@ public class MainActivity extends FragmentActivity implements buttonsFragment.bu
         return cobraClutch;
     }
 
+    String INPUT_FRAG_TAG = "input_fragment";
+    String VIDEO_FRAG_TAG = "video_fragment";
+
     private Vibrator myVib;
     int pressed[] = new int[4];
+    int currentFragmentSelection = 0;
+    int lastPressed[] = new int[4];
     chain currentChain;
     inputsFragment displayFragment;
+    videoFragment videoFragment;
+    buttonsFragment buttonsFragment;
     Dialog myDialog;
     ProgressBar progressBar;
     long startTime = 0;
     long inputWindow = 3000;
     boolean resetInputs = true;
+
+    //mode 0 = grabInputs
+    //mode 1 = grabBreaks
+    int mode = 0;
     //final chain[] nextGrab = new chain[1];
     Handler timerHandler = new Handler();
     Runnable timerRunnable = new Runnable() {
@@ -700,14 +717,26 @@ public class MainActivity extends FragmentActivity implements buttonsFragment.bu
 //            seconds = seconds % 60;
             int progress = (int)( (float)millis / inputWindow  * 100);
             //Log.d("Progress", "Millis: "+ Long.toString(( ( (float)millis / inputWindow ) * (long)100.0)));
-            Log.d("Progress", "division makes sense: "+ Long.toString((long)((float)millis/inputWindow)));
-            Log.d("Progress", "Millis: "+ Long.toString(millis));
-            Log.d("Progress", "Progress: "+ Integer.toString(progress));
-            progressBar.setProgress(progress);
+            //Log.d("Progress", "division makes sense: "+ Long.toString((long)((float)millis/inputWindow)));
+            //Log.d("Progress", "Millis: "+ Long.toString(millis));
+            //Log.d("Progress", "Progress: "+ Integer.toString(progress));
+            //Log.d("inputWindow", Long.toString(inputWindow));
+            if (currentFragmentSelection == 0)
+                progressBar.setProgress(progress);
             if (millis>=inputWindow) {
-                timerHandler.removeCallbacks(timerRunnable);
-                ShowPopup(findViewById(android.R.id.content), 0);
-            } else timerHandler.postDelayed(this, 250);
+                Log.d("inputWindow", "times up!");
+                //timerHandler.removeCallbacks(timerRunnable);
+                if (currentFragmentSelection == 0)
+                    ShowPopup(findViewById(android.R.id.content), 0);
+                else {
+                    if (videoFragment.getBroken()) {
+                        Log.d("timerRunnable", "grab broken, swapping visibility");
+                        videoFragment.swapVisibility();
+                    }
+                    Log.d("timerRunnable", "grab not broken");
+                    timerHandler.removeCallbacks(timerRunnable);
+                }
+            } else timerHandler.postDelayed(this, 33);
         }
     };
 
@@ -720,35 +749,83 @@ public class MainActivity extends FragmentActivity implements buttonsFragment.bu
         myVib = (Vibrator) this.getSystemService(VIBRATOR_SERVICE);
         setContentView(R.layout.activity_main);
         myDialog = new Dialog(this);
-        displayFragment = (inputsFragment) getSupportFragmentManager().findFragmentById(R.id.main_inputs_frag);
-        progressBar = findViewById(R.id.progressBar);
+        //displayFragment = (inputsFragment) getSupportFragmentManager().findFragmentById(R.id.main_inputs_frag);
+        //progressBar = findViewById(R.id.progressBar);
+
+        FragmentTransaction ft = (FragmentTransaction) getSupportFragmentManager().beginTransaction();
+        ft.add(R.id.button_container, new buttonsFragment(), "buttons_fragment");
+        ft.addToBackStack(null);
+        ft.commit();
+        ft = (FragmentTransaction) getSupportFragmentManager().beginTransaction();
+        ft.add(R.id.display_container, new inputsFragment(), "inputs_fragment");
+        ft.addToBackStack(null);
+        ft.commit();
         currentChain = backhandSlap();
+        displayFragment = (inputsFragment) getSupportFragmentManager().findFragmentByTag("inputs_fragment");
+        progressBar = findViewById(R.id.progressBar);
+//        buttonsFragment = (buttonsFragment) getSupportFragmentManager().findFragmentByTag("buttons_fragment");
         ShowPopup(findViewById(android.R.id.content), -1);
     }
 
+//    public void launchMenuActivity(View view) {
+//        Log.d("MENU", "Menu launch button clicked");
+//        Intent intent = new Intent(this, MenuActivity.class);
+//        startActivity(intent);
+//    }
+
+    public boolean newInputValid(int [] input, int[] lastInput) {
+//        if (Arrays.equals(input, lastInput)) {
+//            return false;
+//        }
+//        if (Arrays.equals(input, chain.ZERO)) {
+//            return false;
+//        }
+        for (int i = 0; i < 4; i++) {
+            if (lastInput[i] ==0 && input[i] == 1) {
+                return true;
+            }
+        }
+        return false;
+    }
     @Override
     public void handleTouch(int pressedIndex, MotionEvent m) {
         input userInput;
-        Log.d("","Touch event initiated");
-        Log.d("ChainName", currentChain.getChainName());
-        //int pointerCount = m.getPointerCount();
-        //for (int i = 0; i < pointerCount; ++i) {}
-        //int initialSeq = currentChain.cSeq;
-        sequenceGroup cGroup = currentChain.currentGroup;
+        Log.d("", "Touch event initiated");
+        lastPressed = pressed.clone();
         if (pressedIndex != -1) {
-            int action = m.getActionMasked();
-            switch (action) {
-                case MotionEvent.ACTION_DOWN:
-                    pressed[pressedIndex] = 1;
-                    break;
-                case MotionEvent.ACTION_UP:
-                    pressed[pressedIndex] = 0;
-                    break;
+            if (pressedIndex == 4) {
+                int action = m.getActionMasked();
+                switch (action) {
+                    case MotionEvent.ACTION_DOWN:
+                        pressed[0] = 1;
+                        pressed[1] = 1;
+                        break;
+                    case MotionEvent.ACTION_UP:
+                        pressed[0] = 0;
+                        pressed[1] = 0;
+                        break;
+                }
+            } else {
+                int action = m.getActionMasked();
+                switch (action) {
+                    case MotionEvent.ACTION_DOWN:
+                        pressed[pressedIndex] = 1;
+                        break;
+                    case MotionEvent.ACTION_UP:
+                        pressed[pressedIndex] = 0;
+                        break;
+                }
             }
         }
+        if (!newInputValid(pressed, lastPressed)) {
+            return;
+        }
         userInput = new input(pressed[0], pressed[1], pressed[2], pressed[3]);
-        if (resetInputs == true) {
-            myVib.vibrate(50);
+        myVib.vibrate(50);
+
+        if (currentFragmentSelection == 0) {
+            Log.d("ChainName", currentChain.getChainName());
+            sequenceGroup cGroup = currentChain.currentGroup;
             int clearResponse = currentChain.clear(userInput);
             if (clearResponse > 0) {
                 displayFragment.inputCleared(clearResponse, cGroup);
@@ -764,8 +841,9 @@ public class MainActivity extends FragmentActivity implements buttonsFragment.bu
                 displayFragment.setInputs(currentChain);
                 startTime = System.currentTimeMillis();
                 timerHandler.postDelayed(timerRunnable, 0);
-            } else if (currentChain.cleared == true) {
-                timerHandler.removeCallbacks(timerRunnable);
+            } // else if \/
+            if (currentChain.cleared == true) {
+                //timerHandler.removeCallbacks(timerRunnable);
                 Log.d("", "Time to set new chain");
                 ShowPopup(findViewById(android.R.id.content), 1);
             }
@@ -773,89 +851,82 @@ public class MainActivity extends FragmentActivity implements buttonsFragment.bu
             String text = String.format("%d,%d,%d,%d", pressed[0], pressed[1], pressed[2], pressed[3]);
             Log.d("buttons", text);
         } else {
-            String text = String.format("%d,%d,%d,%d", pressed[0], pressed[1], pressed[2], pressed[3]);
-            Log.d("buttons", text);
-            if (Arrays.equals(userInput.inputs,chain.ZERO)) {
-                Log.d("buttons", "next input is now valid");
-                resetInputs = true;
+            //input must match exactly
+            //only one try allowed
+            //currently on video_fragment
+            if (videoFragment.isChanceLeft()) {
+                if (videoFragment.getBreakInput().match(userInput)) {
+                    Log.d("videoFragment", "grab broken successfully");
+                    videoFragment.grabBroken();
+                }
+                videoFragment.chanceLost();
+            }
+            else  {
+                Log.d("chanceLeft", "naw");
             }
         }
     }
-    public void ShowPopup(View v) {
-        timerHandler.removeCallbacks(timerRunnable);
+    public void setChart(View v, ZoomableImageView chartView, String chainName) {
+        Bitmap king_chart = BitmapFactory.decodeResource(v.getContext().getResources(), R.drawable.king_chart);
+        Bitmap nina_chart = BitmapFactory.decodeResource(v.getContext().getResources(), R.drawable.nina_chart);
+        switch (chainName) {
+            case("Backhand Slaps"):
+            case("Betrayer"):
+            case("Crab Hold"):
+                chartView.setImageBitmap(nina_chart);
+                break;
+            case("Arm Breaker"):
+            case("Standing Heel Hold"):
+            case("Reverse Special Stretch Bomb"):
+            case("Reverse Arm Slam"):
+            case("Cobra Clutch"):
+                chartView.setImageBitmap(king_chart);
+                break;
+        }
 
-        TextView successFail;
-        TextView chosenGrab;
-        Button goNext;
-        myDialog.setContentView(R.layout.completion_popup);
-        successFail = (TextView) myDialog.findViewById(R.id.successFail);
-        chosenGrab = (TextView) myDialog.findViewById(R.id.current_grab_menu);
-        chosenGrab.setText(currentChain.getChainName());
-        goNext = (Button) myDialog.findViewById(R.id.go_next_button);
-        successFail.setText("Welcome!");
-
-        chosenGrab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                PopupMenu popup = new PopupMenu(v.getContext(), v);
-                popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-                    @Override
-                    public boolean onMenuItemClick(MenuItem menuItem) {
-                        TextView chosenGrab;
-                        chosenGrab = (TextView) myDialog.findViewById(R.id.current_grab_menu);
-                        switch (menuItem.getItemId()) {
-                            case R.id.item_backhand:
-                                chosenGrab.setText("Backhand Slaps");
-                                return true;
-                            case R.id.item_betrayer:
-                                chosenGrab.setText(R.string.grab_betrayer);
-                                return true;
-                            case R.id.item_crab:
-                                chosenGrab.setText(R.string.grab_crab);
-                                return true;
-                        }
-                        return false;
-                    }
-                });
-                MenuInflater inflater = popup.getMenuInflater();
-                inflater.inflate(R.menu.grab_selection, popup.getMenu());
-                popup.show();
-            }
-        });
-        goNext.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                TextView chosenGrab;
-                chosenGrab = (TextView) myDialog.findViewById(R.id.current_grab_menu);
-                currentChain = null;
-                switch (chosenGrab.getText().toString()) {
-                    case("Backhand Slaps"):
-                        Log.d("SetGrab", "Backhand Slaps");
-                        currentChain = backhandSlap();
-                        break;
-                    case("Betrayer"):
-                        Log.d("SetGrab", "Betrayer");
-                        currentChain = betrayer();
-                        break;
-                    case("Crab Hold"):
-                        Log.d("SetGrab", "Crab Hold");
-                        currentChain = crabHold();
-                        break;
-                }
-                displayFragment.clearHeader();
-                displayFragment.clearInputs();
-                displayFragment.setHeader(currentChain);
-                displayFragment.setInputs(currentChain);
-                myDialog.dismiss();
-                startTime = System.currentTimeMillis();
-                timerHandler.postDelayed(timerRunnable, 0);
-            }
-        });
-        myDialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-        myDialog.show();
     }
+    //selection 0 = set inputsFragment, selection 1 = set videoFragment
+    public void setFragment(int selection) {
+        FragmentTransaction ft;
+        if (selection == 0) {
+            inputsFragment test = (inputsFragment) getSupportFragmentManager().findFragmentByTag("inputs_fragment");
+            if (test == null || !test.isVisible()) {
+                Log.d("inputsFragment", "test is null  ");
+                ft = getSupportFragmentManager().beginTransaction();
+                ft.setReorderingAllowed(true);
+                ft.replace(R.id.display_container, new inputsFragment(), "inputs_fragment");
+                ft.commitNow();
+                //displayFragment = (inputsFragment) getSupportFragmentManager().findFragmentByTag("inputs_fragment");
+            }
+            //progressBar = findViewById(R.id.progressBar);
+            //displayFragment = (inputsFragment) getSupportFragmentManager().findFragmentByTag("inputs_fragment");
+            currentFragmentSelection = 0;
+            displayFragment = (inputsFragment) getSupportFragmentManager().findFragmentByTag("inputs_fragment");
+            if (test != null && test.isVisible())
+                Log.d("inputsFragment", "exists");
+            else
+                Log.d("inputsFragment", "not found");
+        } else {
+            videoFragment test = (videoFragment) getSupportFragmentManager().findFragmentByTag("video_fragment");
+            if (test == null || !test.isVisible()) {
+                Log.d("videoFragment", "test is null  ");
+                ft = getSupportFragmentManager().beginTransaction();
+                ft.setReorderingAllowed(true);
+                ft.replace(R.id.display_container, new videoFragment(), "video_fragment");
+                ft.commitNow();
 
+            }
+            //videoFragment = (videoFragment) getSupportFragmentManager().findFragmentByTag("video_fragment");
+            currentFragmentSelection = 1;
+            videoFragment = (videoFragment) getSupportFragmentManager().findFragmentByTag("video_fragment");
+            if (test != null && test.isVisible())
+                Log.d("videoFragment", "exists");
+            else
+                Log.d("videoFragment", "not found");
+        }
+    }
     public void ShowPopup(View v, int displayMessage) {
+        timerHandler.removeCallbacks(timerRunnable);
         //change success to int to create other title options
         TextView successFail;
         TextView chosenGrab;
@@ -863,8 +934,16 @@ public class MainActivity extends FragmentActivity implements buttonsFragment.bu
         myDialog.setContentView(R.layout.completion_popup);
         successFail = (TextView) myDialog.findViewById(R.id.successFail);
         chosenGrab = (TextView) myDialog.findViewById(R.id.current_grab_menu);
-        chosenGrab.setText(currentChain.getChainName());
+        String currentSelection;
+        if (currentFragmentSelection == 0) {
+            currentSelection = currentChain.getChainName();
+        } else {
+            currentSelection = "Grab Break Practice";
+        }
+        chosenGrab.setText(currentSelection);
         goNext = (Button) myDialog.findViewById(R.id.go_next_button);
+        ZoomableImageView chartView = (ZoomableImageView)myDialog.findViewById(R.id.chartView);
+        setChart(v,chartView,chosenGrab.getText().toString());
         switch (displayMessage) {
             case -1:
                 successFail.setText("Welcome!");
@@ -881,25 +960,47 @@ public class MainActivity extends FragmentActivity implements buttonsFragment.bu
         }
         chosenGrab.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void onClick(final View v) {
                 PopupMenu popup = new PopupMenu(v.getContext(), v);
                 popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
                     @Override
                     public boolean onMenuItemClick(MenuItem menuItem) {
                         TextView chosenGrab;
                         chosenGrab = (TextView) myDialog.findViewById(R.id.current_grab_menu);
+                        ZoomableImageView chartView = (ZoomableImageView)myDialog.findViewById(R.id.chartView);
                         switch (menuItem.getItemId()) {
                             case R.id.item_backhand:
                                 chosenGrab.setText("Backhand Slaps");
-                                return true;
+                                break;
                             case R.id.item_betrayer:
                                 chosenGrab.setText(R.string.grab_betrayer);
-                                return true;
+                              break;
                             case R.id.item_crab:
                                 chosenGrab.setText(R.string.grab_crab);
-                                return true;
+                                break;
+                            case R.id.item_breaker:
+                                chosenGrab.setText(R.string.grab_breaker);
+                                break;
+                            case R.id.item_heel:
+                                chosenGrab.setText(R.string.grab_heel);
+                                break;
+                            case R.id.item_bomb:
+                                chosenGrab.setText(R.string.grab_bomb);
+                                break;
+                            case R.id.item_slam:
+                                chosenGrab.setText(R.string.grab_slam);
+                                break;
+                            case R.id.item_cobra:
+                                chosenGrab.setText(R.string.grab_cobra);
+                                break;
+                            case R.id.item_breaks:
+                                chosenGrab.setText(R.string.break_practice);
+                                break;
+                            default:
+                                return false;
                         }
-                        return false;
+                        setChart(v,chartView,chosenGrab.getText().toString());
+                        return true;
                     }
                 });
                 MenuInflater inflater = popup.getMenuInflater();
@@ -913,6 +1014,7 @@ public class MainActivity extends FragmentActivity implements buttonsFragment.bu
                 TextView chosenGrab;
                 chosenGrab = (TextView) myDialog.findViewById(R.id.current_grab_menu);
                 currentChain = null;
+                int selection = 0;
                 switch (chosenGrab.getText().toString()) {
                     case("Backhand Slaps"):
                         Log.d("SetGrab", "Backhand Slaps");
@@ -926,17 +1028,70 @@ public class MainActivity extends FragmentActivity implements buttonsFragment.bu
                         Log.d("SetGrab", "Crab Hold");
                         currentChain = crabHold();
                         break;
+                    case("Arm Breaker"):
+                        Log.d("SetGrab", "Arm Breaker");
+                        currentChain = armBreaker();
+                        break;
+                    case("Standing Heel Hold"):
+                        Log.d("SetGrab", "Standing Heel Hold");
+                        currentChain = sHeelHold();
+                        break;
+                    case("Reverse Special Stretch Bomb"):
+                        Log.d("SetGrab", "Reverse Special Stretch Bomb");
+                        currentChain = rSStretchBomb();
+                        break;
+                    case("Reverse Arm Slam"):
+                        Log.d("SetGrab", "Reverse Arm Slam");
+                        currentChain = reverseArmSlam();
+                        break;
+                    case("Cobra Clutch"):
+                        Log.d("SetGrab", "Cobra Clutch");
+                        currentChain = cobraClutch();
+                        break;
+                    case("Grab Break Practice"):
+                        Log.d("SetGrab", "Break Practice");
+                        selection = 1;
+                        break;
                 }
-                displayFragment.clearHeader();
-                displayFragment.clearInputs();
-                displayFragment.setHeader(currentChain);
-                displayFragment.setInputs(currentChain);
+
+                Log.d("selection", Integer.toString(selection));
+                buttonsFragment = (buttonsFragment) getSupportFragmentManager().findFragmentByTag("buttons_fragment");
+                if (selection == 0) {
+                    Log.d("chosenGrab", "chosen Grab is not Grab Break Practice!");
+                    setFragment(0);
+                    progressBar = findViewById(R.id.progressBar);
+                    displayFragment = (inputsFragment) getSupportFragmentManager().findFragmentByTag("inputs_fragment");
+                    displayFragment.clearHeader();
+                    displayFragment.clearInputs();
+                    displayFragment.setHeader(currentChain);
+                    displayFragment.setInputs(currentChain);
+                    inputWindow = 3000;
+                    startTime = System.currentTimeMillis();
+                    timerHandler.postDelayed(timerRunnable, 0);
+                    currentFragmentSelection = 0;
+
+                    buttonsFragment.setFourButtonScene();
+                } else {
+                    setFragment(1);
+                    videoFragment = (videoFragment) getSupportFragmentManager().findFragmentByTag("video_fragment");
+                    buttonsFragment.setThreeButtonScene();
+                }
                 myDialog.dismiss();
-                startTime = System.currentTimeMillis();
-                timerHandler.postDelayed(timerRunnable, 0);
+                Log.d("myDialog", "dismissed");
+
             }
         });
         myDialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         myDialog.show();
+        //reset buttons between runs hopefully
+        pressed = new int[4];
+    }
+
+    @Override
+    public void setUpTimer(long inputWindow) {
+        startTime = System.currentTimeMillis();
+        this.inputWindow = inputWindow;
+        Log.d("inputWindow", Long.toString(inputWindow));
+        timerHandler.postDelayed(timerRunnable, 0);
     }
 }

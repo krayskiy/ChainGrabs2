@@ -25,10 +25,29 @@ class input {
     }
     //copy constructor
     public input(input cInput) {
+        inputs = new int[4];
         this.inputs[0] = cInput.inputs[0];
         this.inputs[1] = cInput.inputs[1];
         this.inputs[2] = cInput.inputs[2];
         this.inputs[3] = cInput.inputs[3];
+    }
+    public boolean notEmpty() {
+        if (this.inputs[0] != 0 ||
+                this.inputs[1] != 0 ||
+                this.inputs[2] != 0 ||
+                this.inputs[3] != 0) {
+            return true;
+        }
+        return true;
+    }
+    public boolean notEquals(input cInput) {
+        if (this.inputs[0] == cInput.inputs[0] &&
+        this.inputs[1] == cInput.inputs[1] &&
+        this.inputs[2] == cInput.inputs[2] &&
+        this.inputs[3] == cInput.inputs[3]) {
+            return false;
+        }
+        return true;
     }
     public void adjust(int a, int b, int c, int d) {
         inputs[0] = a;
@@ -46,7 +65,8 @@ class input {
             }
         }
         cleared = true;
-        Log.d("Clear", "Input has been successfully cleared");
+        String nums = Integer.toString(this.inputs[0]) + Integer.toString(this.inputs[1]) + Integer.toString(this.inputs[2]) + Integer.toString(this.inputs[3]);
+        Log.d("Clear", "Input " + nums + " has been successfully cleared");
         return true;
     }
 }
@@ -116,6 +136,7 @@ class sequenceGroup {
         return s.get(i);
     }
 }
+
 class chain {
     public static int[] ZERO = new int[]{0,0,0,0};
     public static int[] ONE = new int[]{1,0,0,0};
@@ -132,7 +153,7 @@ class chain {
     public static int[] TWOTHREEFOUR = new int[]{0,1,1,1};
     public static int[] ONETHREEFOUR = new int[]{1,0,1,1};
     public static int[] ONETWOFOUR = new int[]{1,1,0,1};
-    public static int[] ONETWOTHREEFOUR = new int[]{1,1,1,};
+    public static int[] ONETWOTHREEFOUR = new int[]{1,1,1,1};
 
 
     ArrayList<Integer> initialMotion;
