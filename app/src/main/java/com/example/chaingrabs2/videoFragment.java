@@ -63,7 +63,7 @@ public class videoFragment extends Fragment {
                 }
         );
 
-        scoreDisplay = (TextView) view.findViewById(R.id.score_view);
+//        scoreDisplay = (TextView) view.findViewById(R.id.score_view);
         MediaController controller = new MediaController(view.getContext());
         controller.setVisibility((View.GONE));
         breakVideo = (VideoView) view.findViewById(R.id.break_video);
@@ -154,8 +154,8 @@ public class videoFragment extends Fragment {
     }
     //0 for pre, 1 for post no, 2 for post yes
     public int playVideo() {
-        String scoreText = "Current Score:" + Integer.toString(grabsBroken) + "/" + Integer.toString(grabsPlayed);
-        scoreDisplay.setText(scoreText);
+//        String scoreText = "Current Score:" + Integer.toString(grabsBroken) + "/" + Integer.toString(grabsPlayed);
+//        scoreDisplay.setText(scoreText);
         grabsPlayed += 1;
         chanceLeft = true;
         Log.d("playVideo", "function called");
